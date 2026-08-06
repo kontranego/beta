@@ -22,9 +22,8 @@
 
         /* ================= HALAMAN 1: WELCOME ================= */
         #page-welcome { 
-            /* Ganti URL di bawah dengan foto background custom Anda */
-            background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.8)), url('https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=1080') center/cover no-repeat;
-            justify-content: flex-end; /* Konten di bawah */
+            background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.8)), url('bg-custom.jpg') center/cover no-repeat;
+            justify-content: flex-end; 
             padding-bottom: 60px;
         }
         .welcome-content { background: rgba(0,0,0,0.6); padding: 30px; border-radius: 20px; backdrop-filter: blur(5px); width: 100%; max-width: 400px; border: 1px solid rgba(255,255,255,0.1); }
@@ -38,18 +37,25 @@
         
         .frame-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; width: 100%; max-width: 360px; margin-bottom: 30px; overflow-y: auto; padding: 5px; }
         .frame-item { width: 100%; aspect-ratio: 1080 / 1920; background: #222; border-radius: 12px; border: 3px solid transparent; overflow: hidden; cursor: pointer; transition: border-color 0.2s, box-shadow 0.2s; position: relative; }
-        .frame-item img { width: 100%; height: 100%; object-fit: contain; } /* Menampilkan seluruh frame */
+        .frame-item img { width: 100%; height: 100%; object-fit: contain; }
         .frame-item.selected { border-color: #d63031; box-shadow: 0 0 15px rgba(214, 48, 49, 0.6); }
         .frame-item.selected::after { content: '✓'; position: absolute; top: 10px; right: 10px; background: #d63031; color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; }
 
-        /* ================= HALAMAN 3: KAMERA (FULL SCREEN PREVIEW) ================= */
+        /* ================= MODAL PERINGATAN LANDSCAPE ================= */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 100; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(8px); opacity: 0; pointer-events: none; transition: opacity 0.3s; padding: 20px; }
+        .modal-overlay.show { opacity: 1; pointer-events: auto; }
+        .modal-content { background: #222; padding: 30px 20px; border-radius: 20px; width: 100%; max-width: 350px; text-align: center; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .modal-icon { font-size: 60px; margin-bottom: 15px; display: inline-block; animation: rotateIcon 2s infinite ease-in-out; }
+        .modal-content h2 { font-size: 22px; margin-bottom: 15px; color: #fff; }
+        .modal-content p { font-size: 15px; color: #ccc; line-height: 1.6; margin-bottom: 25px; }
+        
+        @keyframes rotateIcon { 0% { transform: rotate(0deg); } 50% { transform: rotate(-90deg); } 100% { transform: rotate(0deg); } }
+
+        /* ================= HALAMAN 3: KAMERA (FULL PREVIEW) ================= */
         #page-camera { padding: 0; background: black; overflow: hidden; }
-        
-        /* Container video full screen */
         .camera-view-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
-        #videoElement { width: 100%; height: 100%; object-fit: cover; /* INI YANG MEMBUAT FULL LUAS */ transform: scaleX(-1); /* Mirror Preview */ }
+        #videoElement { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
         
-        /* Overlay UI Kamera */
         .camera-ui { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; display: flex; flex-direction: column; justify-content: space-between; padding: 30px; box-sizing: border-box; pointer-events: none; }
         .cam-header { display: flex; justify-content: center; }
         .photo-counter { background: rgba(0,0,0,0.5); padding: 8px 16px; border-radius: 20px; font-size: 14px; backdrop-filter: blur(5px); }
@@ -71,7 +77,6 @@
         
         .action-area { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; }
 
-        /* Hidden Canvas untuk Processing */
         #processingCanvas, #renderCanvas { display: none; }
     </style>
 </head>
@@ -96,7 +101,6 @@
         <p class="page-subtitle">Pilih desain favorit Anda (Ukuran 1080x1920)</p>
         
         <div class="frame-grid">
-            <!-- Ganti src="..." dengan file PNG frame Anda (wajib transparan di lubang foto) -->
             <div class="frame-item" onclick="selectFrame(this, 'frame1.png')">
                 <img src="frame1.png" alt="Frame 1">
             </div>
@@ -111,8 +115,19 @@
             </div>
         </div>
         
-        <button id="startCaptureBtn" class="main-btn" disabled onclick="startPhotoSession()">Ambil Foto</button>
+        <!-- Pemicu diganti ke fungsi memunculkan popup peringatan -->
+        <button id="startCaptureBtn" class="main-btn" disabled onclick="showLandscapeWarning()">Ambil Foto</button>
         <button class="sec-btn" onclick="navigateTo('page-welcome')">Kembali</button>
+    </div>
+
+    <!-- MODAL PERINGATAN LANDSCAPE -->
+    <div id="landscapeWarningModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-icon">📱</div>
+            <h2>Putar HP Anda</h2>
+            <p>Untuk hasil jepretan yang maksimal dan sesuai dengan lubang bingkai, mohon posisikan HP Anda secara <strong>Mendatar (Landscape)</strong> selama sesi foto.</p>
+            <button class="main-btn" style="width: 100%; margin-top: 0;" onclick="acceptWarningAndStart()">Oke, Saya Mengerti</button>
+        </div>
     </div>
 
     <!-- HALAMAN 3: KAMERA (FULL PREVIEW) -->
@@ -121,10 +136,8 @@
             <video id="videoElement" autoplay playsinline></video>
         </div>
         
-        <!-- Flash Effect Overlay -->
         <div id="flashOverlay"></div>
 
-        <!-- UI Overlay -->
         <div class="camera-ui">
             <div class="cam-header">
                 <div class="photo-counter">Foto <span id="currentPhotoNum">1</span> / 3</div>
@@ -132,9 +145,7 @@
             <div class="cam-center">
                 <div id="timerElement">5</div>
             </div>
-            <div class="cam-footer">
-                <!-- Spacing untuk footer jika perlu tombol -->
-            </div>
+            <div class="cam-footer"></div>
         </div>
     </div>
 
@@ -154,29 +165,24 @@
     </div>
 
     <!-- CANVAS TERSEMBUNYI UNTUK PEMROSESAN -->
-    <!-- Canvas untuk memproses satu foto (crop -> rotate) -->
     <canvas id="processingCanvas"></canvas>
-    <!-- Canvas akhir untuk menggabungkan frame + 3 foto (1080x1920) -->
     <canvas id="renderCanvas" width="1080" height="1920"></canvas>
 
     <script>
         // ================= KONFIGURASI GLOBAL =================
         let selectedFrameSrc = null;
         let localStream = null;
-        let capturedPhotosBase64 = []; // Menyimpan 3 foto hasil proses (4:3)
+        let capturedPhotosBase64 = []; 
         const TOTAL_PHOTOS = 3;
         const COUNTDOWN_SECONDS = 5;
 
-        // TARGET UKURAN FOTO DI LUBANG FRAME (Landscape 4:3)
         const TARGET_PHOTO_W = 566;
         const TARGET_PHOTO_H = 424;
 
-        // POSISI LUBANG FOTO PADA FRAME (X: Tengah, Y: Menyesuaikan)
-        // Disesuaikan agar lubang berada di area transparan frame Anda
         const HOLE_POSITIONS = [
-            { x: 257, y: 180 },  // Foto 1
-            { x: 257, y: 616 },  // Foto 2
-            { x: 257, y: 1052 }  // Foto 3
+            { x: 257, y: 180 },  
+            { x: 257, y: 616 },  
+            { x: 257, y: 1052 }  
         ];
 
         // ================= NAVIGASI SYSTEM =================
@@ -185,32 +191,42 @@
             document.getElementById(pageId).classList.add('active');
         }
 
-        // ================= LOGIKA HALAMAN 2: PILIH FRAME =================
         function selectFrame(element, frameSrc) {
-            // Hapus seleksi sebelumnya
             document.querySelectorAll('.frame-item').forEach(el => el.classList.remove('selected'));
-            // Tambah seleksi ke yang diklik
             element.classList.add('selected');
             selectedFrameSrc = frameSrc;
-            // Aktifkan tombol lanjut
             document.getElementById('startCaptureBtn').disabled = false;
         }
 
-        // ================= LOGIKA HALAMAN 3: SESI KAMERA =================
-        async function startPhotoSession() {
+        // ================= LOGIKA MODAL PERINGATAN LANDSCAPE =================
+        function showLandscapeWarning() {
             if (!selectedFrameSrc) return;
-            capturedPhotosBase64 = []; // Reset foto sebelumnya
+            const modal = document.getElementById('landscapeWarningModal');
+            modal.classList.add('show');
+        }
+
+        function acceptWarningAndStart() {
+            const modal = document.getElementById('landscapeWarningModal');
+            modal.classList.remove('show');
+            
+            // Tunggu animasi popup menghilang sebentar, lalu jalankan kamera
+            setTimeout(() => {
+                startPhotoSession();
+            }, 300);
+        }
+
+        // ================= LOGIKA KAMERA =================
+        async function startPhotoSession() {
+            capturedPhotosBase64 = []; 
             navigateTo('page-camera');
             
             const video = document.getElementById('videoElement');
 
             try {
-                // Request kamera belakang (facingMode: environment) atau depan (user)
-                // Di mobile, environment biasanya memberikan view yang lebih luas dan resolusi tinggi
                 const stream = await navigator.mediaDevices.getUserMedia({ 
                     video: { 
-                        facingMode: "user", // Gunakan kamera depan untuk selfie
-                        width: { ideal: 1920 }, // Request resolusi tinggi mentah
+                        facingMode: "user", 
+                        width: { ideal: 1920 }, 
                         height: { ideal: 1080 } 
                     }, 
                     audio: false 
@@ -219,7 +235,6 @@
                 localStream = stream;
                 video.srcObject = stream;
                 
-                // Mulai sequence pengambilan gambar setelah video ready
                 video.onloadedmetadata = () => {
                     video.play();
                     startCountdownSequence();
@@ -247,28 +262,23 @@
                 counterEl.innerText = i;
                 timerEl.classList.add('show');
                 
-                // Countdown loop
                 for (let count = COUNTDOWN_SECONDS; count > 0; count--) {
                     timerEl.innerText = count;
                     await wait(1000);
                 }
                 
-                // Ambil Foto & Flash
                 timerEl.classList.remove('show');
                 triggerFlash();
                 captureAndProcessPhoto();
                 
-                // Jeda sebentar antar foto
                 await wait(800); 
             }
 
-            // Selesai ambil 3 foto
             stopCamera();
             await wait(500);
             renderFinalCompositedImage();
         }
 
-        // Utility: Menunggu (ms)
         function wait(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 
         function triggerFlash() {
@@ -277,110 +287,86 @@
             setTimeout(() => flash.classList.remove('do-flash'), 300);
         }
 
-        // ================= CORE LOGIC: PEMROSESAN GAMBAR (ANTI-GEPENG) =================
+        // ================= CORE LOGIC: PEMROSESAN GAMBAR (-90 Derajat Kiri) =================
         function captureAndProcessPhoto() {
             const video = document.getElementById('videoElement');
             const procCanvas = document.getElementById('processingCanvas');
             const ctx = procCanvas.getContext('2d');
 
-            // Resolusi mentah video input (bisa 1920x1080 atau 1280x720 potret)
             const vW = video.videoWidth;
             const vH = video.videoHeight;
 
-            // --- LANGKAH 1: AMBIL DATA MENTAH DARI VIDEO (FULL VIEW/WIDE) ---
-            // Kita buat canvas sementara berukuran sama dengan video mentah
             procCanvas.width = vW;
             procCanvas.height = vH;
 
-            // Mirror effect (karena preview di-mirror, hasil jepretan harus di-mirror balik agar tulisan tidak terbalik)
             ctx.translate(vW, 0);
             ctx.scale(-1, 1);
             ctx.drawImage(video, 0, 0, vW, vH);
             
-            // --- LANGKAH 2: ROTATE KE KANAN (90 derajat searah jarum jam) ---
-            // Membuat canvas baru untuk menampung hasil rotasi
             const rotatedCanvas = document.createElement('canvas');
-            // Lebar dan tinggi ditukar karena rotasi 90 derajat
             rotatedCanvas.width = vH; 
             rotatedCanvas.height = vW;
             const rCtx = rotatedCanvas.getContext('2d');
 
             rCtx.translate(rotatedCanvas.width / 2, rotatedCanvas.height / 2);
-            rCtx.rotate(90 * Math.PI / 180); // Rotate 90 derajat CW
+            rCtx.rotate(-90 * Math.PI / 180); // ROTASI KE KIRI (-90)
             rCtx.drawImage(procCanvas, -vW / 2, -vH / 2);
 
-            // --- LANGKAH 3: CROP MENJADI 4:3 (LANDSCAPE) DARI HASIL ROTASI ---
-            // tujuannya agar pas lubang, TANPA GEPENG (menggunakan Object-Fit: Cover logic)
-            
             const rW = rotatedCanvas.width;
             const rH = rotatedCanvas.height;
             
-            const targetRatio = TARGET_PHOTO_W / TARGET_PHOTO_H; // 4:3 = 1.333
+            const targetRatio = TARGET_PHOTO_W / TARGET_PHOTO_H;
             const rotatedRatio = rW / rH;
 
             let sourceX = 0, sourceY = 0, sourceWidth = rW, sourceHeight = rH;
 
-            // Logika Center Crop (mencari area source yang akan diambil)
             if (rotatedRatio > targetRatio) {
-                // Gambar hasil rotasi terlalu lebar -> potong kiri kanan
                 sourceWidth = rH * targetRatio;
                 sourceX = (rW - sourceWidth) / 2;
             } else {
-                // Gambar hasil rotasi terlalu tinggi -> potong atas bawah
                 sourceHeight = rW / targetRatio;
                 sourceY = (rH - sourceHeight) / 2;
             }
 
-            // Canvas akhir untuk satu foto (566x424)
             const finalPhotoCanvas = document.createElement('canvas');
             finalPhotoCanvas.width = TARGET_PHOTO_W;
             finalPhotoCanvas.height = TARGET_PHOTO_H;
             const fCtx = finalPhotoCanvas.getContext('2d');
 
-            // Menggambar area yang di-crop ke ukuran target akhir
             fCtx.drawImage(rotatedCanvas, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, TARGET_PHOTO_W, TARGET_PHOTO_H);
 
-            // Simpan hasil proses (4:3 landscape) ke array
             capturedPhotosBase64.push(finalPhotoCanvas.toDataURL('image/jpeg', 0.92));
         }
 
-        // ================= LOGIKA HALAMAN 4: MERENDER HASIL AKHIR =================
+        // ================= LOGIKA MERENDER HASIL =================
         async function renderFinalCompositedImage() {
             navigateTo('page-result');
             const renderCanvas = document.getElementById('renderCanvas');
             const ctx = renderCanvas.getContext('2d');
             
-            // Bersihkan canvas (isi putih)
             ctx.fillStyle = "#ffffff";
             ctx.fillRect(0, 0, renderCanvas.width, renderCanvas.height);
 
-            // 1. Gambar 3 Foto Hasil Proses (4:3) di koordinat lubang
-            // Posisi lubang: Foto ditempel DI BAWAH frame PNG
             for (let i = 0; i < capturedPhotosBase64.length; i++) {
                 try {
                     const imgPhoto = await loadImage(capturedPhotosBase64[i]);
                     const pos = HOLE_POSITIONS[i];
-                    // Tempel foto tepat sesuai ukuran target (566x424)
                     ctx.drawImage(imgPhoto, pos.x, pos.y, TARGET_PHOTO_W, TARGET_PHOTO_H);
                 } catch (e) { console.error("Gagal memuat foto untuk render", e); }
             }
 
-            // 2. Gambar Frame PNG (Transparan di lubang) DI ATAS foto
             try {
                 const imgFrame = await loadImage(selectedFrameSrc);
-                // Gambar full memenuhi 1080x1920
                 ctx.drawImage(imgFrame, 0, 0, renderCanvas.width, renderCanvas.height);
             } catch (e) {
-                console.error("Gagal memuat frame untuk render. Pastikan path benar.", e);
-                alert("Gagal memuat bingkai. Pastikan file frame ada.");
+                console.error("Gagal memuat frame untuk render", e);
+                alert("Gagal memuat bingkai.");
             }
 
-            // 3. Tampilkan hasil compositing ke elemen img preview
             const dataUrl = renderCanvas.toDataURL('image/png');
             document.getElementById('finalImagePreview').src = dataUrl;
         }
 
-        // Utility: Load Image Promise
         function loadImage(src) {
             return new Promise((resolve, reject) => {
                 const img = new Image();
@@ -402,8 +388,6 @@
         }
 
         function shareToInstagram() {
-            // Web Share API (didukung mobile browser modern Android/iOS Safari)
-            // Catatan: Harus berjalan di HTTPS untuk fitur ini
             const canvas = document.getElementById('renderCanvas');
             
             canvas.toBlob(async (blob) => {
@@ -412,19 +396,12 @@
                 const filesArray = [
                     new File([blob], 'photobooth.png', { type: "image/png", lastModified: new Date().getTime() })
                 ];
-                const shareData = {
-                    files: filesArray,
-                    // title: 'Photobooth Ajeng & Rizki', // Kadang diabaikan IG
-                    // text: '#AjengRizkiWedding' // Kadang diabaikan IG
-                };
+                const shareData = { files: filesArray };
 
                 if (navigator.canShare && navigator.canShare(shareData)) {
                     try {
                         await navigator.share(shareData);
-                    } catch (err) {
-                        console.error('Gagal berbagi:', err);
-                        // Jika user cancel, jangan tampilkan alert error
-                    }
+                    } catch (err) {}
                 } else {
                     alert("Browser Anda tidak mendukung fitur share langsung. Silakan Unduh foto dan unggah manual ke Instagram.");
                 }
